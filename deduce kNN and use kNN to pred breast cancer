@@ -1,0 +1,97 @@
+library(foreign)
+library(questionr)
+library(dplyr)
+#data from "http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data"
+wdbc1<- read.csv("wdbc.csv",header = FALSE)
+View(wdbc1)
+
+#create names of varaiables and fix dataframe
+
+fix(wdbc)
+attach(wdbc1)
+diagnosis<-factor(diagnosis,levels = c("B","M"),
+                  labels = c("Benign","Maligant"))
+wdbc<-wdbc1[-1]
+detach(wdbc1)
+attach(wdbc)
+table(diagnosis)
+summary(radius)
+summary(area)
+summary(smoothness)
+
+#min-max about variables
+
+normalize<- function(x){return((x-min(x))/(max(x)-min(x)))}
+wdbc_all<- as.data.frame(lapply(wdbc[2:31], normalize))
+
+detach(wdbc)
+attach(wdbc_all)
+summary(area)
+
+#train and test
+
+
+n=nrow(wdbc_all)
+set.seed(1234)
+trainindex<-sample(1:n,round(n*7/10))
+traindata_x<-wdbc_all[trainindex,]
+testdata_x<-wdbc_all[-trainindex,]
+traindata_y<-diagnosis[trainindex]
+testdata_y<-diagnosis[-trainindex]
+
+#kNN
+
+if ("class"%in% rownames(install.packages()) == FALSE) {
+  install.packages("class")
+};library(class)
+
+wdbc_test_pred<- knn(traindata_x,testdata_x,traindata_y,k=21)
+
+# confusion matrix
+
+library(caret)
+answer1<-table(wdbc_test_pred,diagnosis[-trainindex])
+confusionMatrix(answer1,positive="Maligant")
+# Accuracy is 0.9649
+
+# regulazition
+
+
+wdbc_r <- as.data.frame(scale(wdbc[-1]))
+trainindex1<-sample(1:n,round(n*7/10))
+traindata_x1<-wdbc_r[trainindex,]
+testdata_x1<-wdbc_r[-trainindex,]
+traindata_y1<-diagnosis[trainindex1]
+testdata_y1<-diagnosis[-trainindex1]
+wdbc_test_pred1<- knn(traindata_x1,testdata_x1,traindata_y1,k=21)
+answer2<-table(wdbc_test_pred1,testdata_y1)
+confusionMatrix(answer2,positive = "Maligant")
+#accuracy gets lower to 0.6023 ...
+#min-max can reduce the influence of variables' measuring scales,I think some extreme values influent the weight of variavles, 
+#so make the accuracy lower.
+# Also you can change "k"
+
+#at the end, i will try to create knn function by my self
+
+#diffMat = (xi-yi)    i=1:nrow(train)
+#use apply() to sum up one row, and  sqrt it to get Euclidean Distance between vec and sample point
+#order it and find k neiborgh, select the most frequent label
+
+myknn <- function(train,test,labels,k){
+  if(ncol(train)!=ncol(test)) stop("dims of 'test' and 'train' are different")
+  if(nrow(train)!=length(labels)) stop("'train' and 'class' have different lengths")
+  labels <- as.character(labels)              
+  classify_iner <- function(vec){                 
+    diffMat <- matrix(vec,nrow(train),ncol(train),byrow = TRUE) - train
+    distances <- diffMat^2  %>% apply(.,1,sum) %>% sqrt
+    sortedDistIndexes <- order(distances)
+    kMaxDistLabels <- vector(length = k)
+    for(i in 1:k){
+      kMaxDistLabels[i] <- labels[sortedDistIndexes[i]]
+    }
+    predictLabel <- table(kMaxDistLabels) %>% which.max %>% names
+    return(predictLabel)
+  }
+  allPredict <- apply(test,1,classify_iner)
+  return(allPredict)
+}
