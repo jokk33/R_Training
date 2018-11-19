@@ -54,7 +54,7 @@ answer1<-table(wdbc_test_pred,diagnosis[-trainindex])
 confusionMatrix(answer1,positive="Maligant")
 # Accuracy is 0.9649
 
-# regulazition
+# Standardization
 
 
 wdbc_r <- as.data.frame(scale(wdbc[-1]))
@@ -67,8 +67,8 @@ wdbc_test_pred1<- knn(traindata_x1,testdata_x1,traindata_y1,k=21)
 answer2<-table(wdbc_test_pred1,testdata_y1)
 confusionMatrix(answer2,positive = "Maligant")
 #accuracy gets lower to 0.6023 ...
-#min-max can reduce the influence of variables' measuring scales,I think some extreme values influent the weight of variavles, 
-#so make the accuracy lower.
+#min-max can reduce the influence of variables' measuring scales,and I think some extreme values influent the weight of variavles, 
+#so make the accuracy of Standardization lower.
 # Also you can change "k"
 
 #at the end, i will try to create knn function by my self
