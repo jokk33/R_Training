@@ -95,3 +95,4 @@ myknn <- function(train,test,labels,k){
   allPredict <- apply(test,1,classify_iner)
   return(allPredict)
 }
+#
